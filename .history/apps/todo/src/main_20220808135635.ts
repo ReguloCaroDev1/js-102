@@ -1,0 +1,33 @@
+import * as express from 'express';
+import dotenv = require('dotenv');
+import mongoose = require('mongoose');
+import TodoTask = require('./models/ToDo');
+dotenv.config();
+const app = express();
+import bodyParser = require('body-parser');
+app.get('/api/datos', (req, res) => {
+  res.send({ message: 'Welcome to todo!' });
+});
+
+app.post('/api/datos', async (req, res) => {
+  return console.log(req.body);
+
+  /*   console.log(title); */
+
+  /* const todoTask = new TodoTask({
+    title: title,
+    description: description,
+  });
+  try {
+    await todoTask.save();
+    res.redirect('/');
+  } catch (err) {
+    res.redirect('/');
+  } */
+});
+
+//connection to db
+mongoose.connect(process.env.DB_CONNECT, () => {
+  console.log('Connected to db!');
+  app.listen(3333, () => console.log('Server Up and running'));
+});
