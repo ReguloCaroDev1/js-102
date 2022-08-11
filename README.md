@@ -22,4 +22,4 @@ On the main folder, use the command `yarn install` to get all the packages for b
 Use the command `yarn start` this command will run both projects at the same time in local enviroment and you can see the frontend at 
 >http://localhost:4200/
 
-Dice 99% typescript pero tiene tipado <any> entonces es como javascript casi casi
+Dice 99% typescript pero tiene tipado `<any>` entonces es como javascript casi casi
