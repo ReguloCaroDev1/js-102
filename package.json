@@ -1,5 +1,5 @@
 {
-  "name": "js102",
+  "name": "grupo-garza-limon",
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
@@ -10,6 +10,7 @@
   "private": true,
   "dependencies": {
     "@material-tailwind/react": "^1.2.3",
+    "@react-pdf/renderer": "^3.1.9",
     "@types/cors": "^2.8.12",
     "@types/jquery": "^3.5.14",
     "@types/mongoose": "^5.11.97",
@@ -22,6 +23,7 @@
     "jquery": "^3.6.0",
     "mongoose": "^6.5.1",
     "react": "18.2.0",
+    "react-datetime-picker": "^5.2.0",
     "react-dom": "18.2.0",
     "regenerator-runtime": "0.13.7",
     "tslib": "^2.3.0",

@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
-  "npmScope": "js102",
+  "npmScope": "grupo-garza-limon",
   "affected": {
     "defaultBase": "main"
   },

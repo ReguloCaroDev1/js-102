@@ -1,26 +1,32 @@
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-
 import axios from 'axios';
+import DateTimePicker from 'react-datetime-picker';
+import 'react-datetime-picker/dist/DateTimePicker.css';
+import 'react-calendar/dist/Calendar.css';
+import 'react-clock/dist/Clock.css';
 import { useEffect, useState } from 'react';
-import { Textarea } from '@material-tailwind/react';
+import { PDFDownloadLink } from '@react-pdf/renderer';
+import { AppPDF } from './AppPDF';
 
-export function App() {
-  const [showModalInfo, setShowModalInfo] = useState(false);
-  const [showModalAdd, setShowModalAdd] = useState(false);
-  const [showModalConfirmDelete, setShowModalConfirmDelete] = useState(false);
-  const [editarModal, setEditarModal] = useState(true);
-  const [title, setAddTarea] = useState('');
-  const [description, setAddDescripcion] = useState('');
-  const [status, setAddStatus] = useState('Pending');
+export const App = () => {
+  const [showModalInfo, setShowModalInfo] = useState<boolean>(false);
+  const [showModalAdd, setShowModalAdd] = useState<boolean>(false);
+  const [showModalConfirmDelete, setShowModalConfirmDelete] =
+    useState<boolean>(false);
+  const [editarModal, setEditarModal] = useState<boolean>(true);
+  const [placa, setPlaca] = useState('');
+  const [residente, setResidente] = useState<string>('Oficial');
+  const [entrada, setEntrada] = useState<number>(0);
   const [datos, setDatos] = useState([]);
-  const [tarea, setTarea] = useState<any>([]);
+  const [vehiculo, setVehiculo] = useState<any>([]);
+  const [value, onChange] = useState<any>(new Date());
+  const [precio, setPrecio] = useState(0);
+
   useEffect(() => {
     try {
       const fetchData = async () => {
         await axios
           .get('http://localhost:3333/api/datos')
           .then((a) => {
-            console.log(a);
             const { data } = a;
             setDatos(data);
           })
@@ -38,20 +44,17 @@ export function App() {
       };
       fetchData();
     } catch (e) {
-      console.log('aaaaa');
+      console.log('error en hacer fetch');
     }
-  }, []);
+  }, [datos]);
 
   const handleSubmit = async (e: any) => {
-    const datos = { title, description, status };
-    const data = await axios.post('http://localhost:3333/api/datos', datos);
-    console.log(data);
-  };
-  const handleSave = async (id: any) => {
-    const datos = { title, description, status };
+    e.preventDefault();
+    const datos = { placa, residente, entrada: Date.now() };
+    setEntrada(Date.now());
     try {
       await axios
-        .patch(`http://localhost:3333/api/datos/${id}`, datos)
+        .post('http://localhost:3333/api/datos', datos)
         .catch(function (error) {
           if (error.response) {
             console.log(error.response.data);
@@ -63,31 +66,69 @@ export function App() {
             console.log('Error', error.message);
           }
         });
-      setEditarModal(!editarModal);
-      window.location.reload();
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const handleSave = async (id: string) => {
+    const datosAxios = {
+      salida: value,
+      cobro: precio,
+    };
+    try {
+      await axios
+        .patch(`http://localhost:3333/api/datos/${id}`, datosAxios)
+        .catch(function (error) {
+          if (error.response) {
+            console.log(error.response.data);
+            console.log(error.response.status);
+            console.log(error.response.headers);
+          } else if (error.request) {
+            console.log(error.request);
+          } else {
+            console.log('Error', error.message);
+          }
+        });
     } catch (error) {
       console.log('necesitas llenar los campos');
     }
   };
-  useEffect(() => {
-    if (tarea) {
-      setAddTarea(tarea.name);
-      setAddDescripcion(tarea.description);
-    }
-  }, [tarea]);
 
-  const eliminarModal = async (id: any) => {
+  useEffect(() => {
+    if (vehiculo) {
+      setPlaca(vehiculo.placa);
+    }
+  }, [vehiculo]);
+
+  useEffect(() => {
+    const entradaNumero = new Date(entrada).getTime();
+    const salidaNumero = new Date(value).getTime();
+    const resultado = salidaNumero - entradaNumero;
+
+    if (value) {
+      if (vehiculo.residente === 'No residente') {
+        const division = Math.round(resultado / 60000);
+        setPrecio(division * 3);
+      }
+      if (vehiculo.residente === 'Residente') {
+        setPrecio(Math.round(resultado / 60000));
+      }
+    }
+  }, [datos]);
+
+  const eliminarModal = async (id: string) => {
     await axios.delete(`http://localhost:3333/api/datos/${id}`);
     window.location.reload();
   };
-  const editarTask = async () => {
-    const datos = { title, description, status };
-    console.log(datos);
+
+  const editarVehiculo = async () => {
     setEditarModal(!editarModal);
   };
+
   const mostrarDatos = (a: any) => {
-    setTarea(a);
-    setShowModalInfo(true);
+    setVehiculo(a);
+    setShowModalInfo(!showModalInfo);
   };
   return (
     <div>
@@ -98,91 +139,65 @@ export function App() {
               className="flex-no-shrink p-2 border-2 rounded text-teal border-teal hover:text-teal-700 hover:bg-teal"
               onClick={() => setShowModalAdd(true)}
             >
-              Create new task
+              Ingresar nuevo vehiculo
             </button>
           </div>
-          <div className="h-100 w-full flex items-center justify-center bg-teal-lightest font-sans">
+
+          <div className="h-full w-full flex items-center justify-center bg-teal-lightest font-sans">
             <div className="bg-white rounded shadow p-6 m-4 w-full lg:max-w-4xl">
               <div className="mb-4 text-center">
-                <h1 className="text-grey-darkest text-4xl">Todo List</h1>
+                <h1 className="text-grey-darkest text-4xl">
+                  Estacionamiento Garza Limon
+                </h1>
               </div>
               <div>
                 <div className="flex mb-4 justify-between">
-                  <p>Name</p>
-                  <p>Descripcion</p>
-                  <p>Status</p>
+                  <p>Placa</p>
+                  <p>Tipo de vehiculo</p>
+                  <p>Entrada</p>
+                  <p>Salida</p>
+                  <p>Cobro</p>
                 </div>
 
-                {datos.map((a: any, i) => (
-                  <div id={a._id} key={i}>
-                    <div className="flex mb-4 justify-between">
+                {datos.map((vehiculo: any, i) => (
+                  <div id={vehiculo._id} key={i}>
+                    <div className="flex mb-4 justify-between max-w-full">
                       <button
-                        className="bg-pink-500 text-white active:bg-pink-600 font-bold uppercase text-xs px-6 py-3 rounded shadow hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 ease-linear transition-all duration-150"
+                        className="bg-pink-500 text-white w-[130px] active:bg-pink-600 font-bold uppercase text-xs px-4 py-3 rounded shadow hover:shadow-lg outline-none focus:outline-none mb-1 ease-linear transition-all duration-150"
                         type="button"
-                        onClick={() => mostrarDatos(a)}
+                        onClick={() => mostrarDatos(vehiculo)}
                       >
-                        {a.name}
+                        {vehiculo.placa}
                       </button>
-                      <div>
-                        <p>{a.description}</p>
-                      </div>
-                      <p>{a.status}</p>
+                      <p className="w-[70px]">{vehiculo.residente}</p>
+                      <p className="w-[5px] mx-28">
+                        {new Date(vehiculo.entrada).toLocaleString()}
+                      </p>
+                      {vehiculo.salida ? (
+                        <p>{new Date(vehiculo.salida).toLocaleString()}</p>
+                      ) : (
+                        <p className="w-[100px]">No hay salida</p>
+                      )}
+                      {vehiculo.residente === 'Oficial' ? (
+                        <p className="ml-12">No hay cobro</p>
+                      ) : (
+                        <p className="ml-12">${vehiculo.cobro}</p>
+                      )}
                     </div>
                   </div>
                 ))}
               </div>
-              {/* <div className="flex flex-col items-center">
-          <span className="text-sm text-gray-700 dark:text-gray-400">
-            Showing{' '}
-            <span className="font-semibold text-gray-900 dark:text-white">
-              1
-            </span>{' '}
-            to{' '}
-            <span className="font-semibold text-gray-900 dark:text-white">
-              10
-            </span>{' '}
-            of{' '}
-            <span className="font-semibold text-gray-900 dark:text-white">
-              100
-            </span>{' '}
-            Entries
-          </span>
-          <div className="inline-flex mt-2 xs:mt-0">
-            <button className="inline-flex items-center py-2 px-4 text-sm font-medium text-white bg-gray-800 rounded-l hover:bg-gray-900 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
-              <svg
-                aria-hidden="true"
-                className="mr-2 w-5 h-5"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  fill-rule="evenodd"
-                  d="M7.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l2.293 2.293a1 1 0 010 1.414z"
-                  clip-rule="evenodd"
-                ></path>
-              </svg>
-              Prev
-            </button>
-            <button className="inline-flex items-center py-2 px-4 text-sm font-medium text-white bg-gray-800 rounded-r border-0 border-l border-gray-700 hover:bg-gray-900 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
-              Next
-              <svg
-                aria-hidden="true"
-                className="ml-2 w-5 h-5"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  fill-rule="evenodd"
-                  d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z"
-                  clip-rule="evenodd"
-                ></path>
-              </svg>
-            </button>
-          </div>
-        </div> */}
             </div>
+          </div>
+          <div className="flex justify-end mr-20">
+            <PDFDownloadLink
+              document={<AppPDF data={datos} />}
+              fileName={'estacionamiento'}
+            >
+              {({ blob, url, loading, error }) =>
+                loading ? 'Cargando...' : 'Descargar Pdf'
+              }
+            </PDFDownloadLink>
           </div>
           <div>
             {showModalInfo ? (
@@ -194,10 +209,11 @@ export function App() {
                         <input
                           className="text-5xl font-semibold w-full "
                           disabled={editarModal}
-                          defaultValue={tarea.name}
-                          onChange={(e) => setAddTarea(e.target.value)}
+                          defaultValue={'Placa: ' + vehiculo.placa}
+                          onChange={(e) => setPlaca(e.target.value)}
                           required
                         />
+
                         <div>
                           <button
                             className="p-1 ml-auto  border-0 text-black  float-right text-3xl leading-none font-semibold outline-none focus:outline-none"
@@ -210,48 +226,31 @@ export function App() {
                         </div>
                       </div>
                       <div className="relative p-6 flex-auto">
-                        <Textarea
-                          disabled={editarModal}
-                          className="my-4 w-full disabled text-slate-500 text-lg leading-relaxed"
-                          onChange={(e) => setAddDescripcion(e.target.value)}
-                          defaultValue={tarea.description}
-                          required
-                        ></Textarea>
-                        {tarea.status !== 'Done' ? (
-                          <>
-                            <p className="my-4 text-slate-500 text-lg leading-relaxed">
-                              Status: {tarea.status}
-                            </p>
-                            <label className="block mt-3 mb-1 text-sm font-medium text-gray-900 dark:text-gray-400">
-                              Escoge el status
-                            </label>
-                            <select
-                              id="status"
-                              name="status"
-                              onChange={(e) => setAddStatus(e.target.value)}
-                              className="bg-gray-50 border border-gray-300 text-slate-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-100 dark:border-gray-300 dark:placeholder-gray-400 dark:text-stone-900 dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                            >
-                              <option defaultValue={'Pending'}>
-                                Selecciona una opcion
-                              </option>
-                              <option value="In progress">In Progress</option>
-                              <option value="Pending">Pending</option>
-                              <option value="Done">Done</option>
-                            </select>
-                          </>
-                        ) : null}
+                        <div>
+                          <p className="my-4 text-slate-500 text-lg leading-relaxed">
+                            Placa: {vehiculo.placa}
+                          </p>
+                          <label className="block mt-3 mb-1 text-sm font-medium text-gray-900 dark:text-gray-400">
+                            Escoge la hora de salida
+                          </label>
+                          <DateTimePicker
+                            onChange={onChange}
+                            value={value}
+                            disabled={editarModal}
+                          />
+                        </div>
                       </div>
+
                       <div className="flex items-center justify-end p-6 border-t border-solid border-slate-200 rounded-b">
                         {editarModal ? (
                           <>
                             <button
                               className="text-red-500 background-transparent font-bold uppercase px-6 py-2 text-sm outline-none focus:outline-none mr-1 mb-1 ease-linear transition-all duration-150"
                               type="button"
-                              onClick={
-                                () =>
-                                  setShowModalConfirmDelete(
-                                    !showModalConfirmDelete
-                                  ) /* eliminarModal(tarea._id) */
+                              onClick={() =>
+                                setShowModalConfirmDelete(
+                                  !showModalConfirmDelete
+                                )
                               }
                             >
                               Eliminar
@@ -259,7 +258,7 @@ export function App() {
                             <button
                               className="bg-sky-600 text-white active:bg-emerald-600 font-bold uppercase text-sm px-6 py-3 rounded shadow hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 ease-linear transition-all duration-150"
                               type="button"
-                              onClick={() => editarTask()}
+                              onClick={() => editarVehiculo()}
                             >
                               Editar
                             </button>
@@ -276,9 +275,13 @@ export function App() {
                             <button
                               className="bg-emerald-600 text-white active:bg-emerald-600 font-bold uppercase text-sm px-6 py-3 rounded shadow hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 ease-linear transition-all duration-150"
                               type="submit"
-                              onClick={() => handleSave(tarea._id)}
+                              onClick={() => {
+                                handleSave(vehiculo._id);
+                                setEditarModal(!editarModal);
+                                setShowModalInfo(!showModalInfo);
+                              }}
                             >
-                              Save
+                              Guardar
                             </button>
                           </>
                         )}
@@ -295,8 +298,8 @@ export function App() {
                         <div className="border-0 rounded-lg shadow-lg relative flex flex-col w-full bg-white outline-none focus:outline-none">
                           <div className="flex items-start justify-between  p-5 border-b border-solid border-slate-200 rounded-t">
                             <h1 className="text-5xl font-semibold w-full ">
-                              Estas seguro que quieres eliminar la tarea
-                              llamada? {tarea.name}
+                              Estas seguro que quieres eliminar el vehiculo{' '}
+                              {vehiculo.placa}?
                             </h1>
                           </div>
                           <div className="flex justify-around py-4">
@@ -310,7 +313,7 @@ export function App() {
                             <button
                               className="bg-red-600 text-white active:bg-red-600 font-bold uppercase text-sm px-6 py-3 rounded shadow hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 ease-linear transition-all duration-150"
                               type="button"
-                              onClick={() => eliminarModal(tarea._id)}
+                              onClick={() => eliminarModal(vehiculo._id)}
                             >
                               Eliminar
                             </button>
@@ -332,7 +335,7 @@ export function App() {
                       <div className="border-0 rounded-lg shadow-lg relative flex flex-col w-full bg-white outline-none focus:outline-none">
                         <div className="flex items-start justify-between p-5 border-b border-solid border-slate-200 rounded-t">
                           <h3 className="text-3xl font-semibold">
-                            Agrega una nueva tarea
+                            Agrega un nuevo vehiculo
                           </h3>
                           <button
                             className="p-1 ml-auto bg-transparent border-0 text-black opacity-5 float-right text-3xl leading-none font-semibold outline-none focus:outline-none"
@@ -345,21 +348,27 @@ export function App() {
                         </div>
                         <div className="relative p-6 flex-auto">
                           <input
-                            id="tarea"
-                            name="tarea"
+                            id="placa"
+                            name="placa"
                             className="shadow appearance-none border rounded w-full py-2 px-3 mr-4 text-grey-darker mb-4"
-                            placeholder="Nombre de la tarea"
-                            onChange={(e) => setAddTarea(e.target.value)}
+                            placeholder="Numero de placa"
+                            onChange={(e) => setPlaca(e.target.value)}
                           />
-                          <input
-                            id="descripcion"
-                            name="descripcion"
-                            className="shadow appearance-none border rounded w-full py-2 px-3 mr-4 text-grey-darker mb-4"
-                            placeholder="Descripcion"
-                            onChange={(e) => setAddDescripcion(e.target.value)}
-                          />
+                          <select
+                            id="residente"
+                            name="residente"
+                            onChange={(e) => setResidente(e.target.value)}
+                            className="bg-gray-50 border border-gray-300 text-slate-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-100 dark:border-gray-300 dark:placeholder-gray-400 dark:text-stone-900 dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                          >
+                            <option defaultValue={'Oficial'}>
+                              Selecciona una opcion del tipo de vehiculo
+                            </option>
+                            <option value="Oficial">Oficial</option>
+                            <option value="Residente">Residente</option>
+                            <option value="No residente">No residente</option>
+                          </select>
                         </div>
-                        {/*footer*/}
+
                         <div className="flex items-center justify-end p-6 border-t border-solid border-slate-200 rounded-b">
                           <button
                             className="text-red-500 background-transparent font-bold uppercase px-6 py-2 text-sm outline-none focus:outline-none mr-1 mb-1 ease-linear transition-all duration-150"
@@ -387,6 +396,6 @@ export function App() {
       ) : null}
     </div>
   );
-}
+};
 
 export default App;

@@ -3,7 +3,6 @@
   "version": 2,
   "projects": {
     "frontend": "apps/frontend",
-    "frontend-e2e": "apps/frontend-e2e",
     "todo": "apps/todo"
   }
 }

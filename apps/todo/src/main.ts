@@ -3,7 +3,6 @@ import bodyParser = require('body-parser');
 import dotenv = require('dotenv');
 import mongoose = require('mongoose');
 import cors = require('cors');
-import { toNamespacedPath } from 'path';
 
 dotenv.config();
 const app = express();
@@ -11,32 +10,37 @@ app.use(cors());
 app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({ extended: true }));
 
-const ItemSchema = new mongoose.Schema({
-  name: {
+const VehiculoSchema = new mongoose.Schema({
+  placa: {
     type: String,
     required: true,
-    minLength: 10,
+    minLength: 1,
     maxLength: 120,
   },
-  description: {
+  residente: {
     type: String,
     required: true,
-    minLength: 10,
-    maxLength: 1000,
+    enum: ['Oficial', 'Residente', 'No residente'],
+    default: 'Oficial',
   },
-  status: {
-    type: String,
-    enum: ['Pending', 'In progress', 'Done'],
-    default: 'Pending',
+  entrada: {
+    type: Date,
+  },
+  salida: {
+    type: Date,
+  },
+  cobro: {
+    type: Number,
+    default: 0,
   },
 });
-const Item = mongoose.model('Item', ItemSchema);
+const Vehiculo = mongoose.model('Vehiculo', VehiculoSchema);
 const jsonParser = bodyParser.json();
 
-// GET todos los ToDo
+// GET todos los vehiculos
 app.get('/api/datos', function (req, res) {
   try {
-    Item.find({}, function (err, todo) {
+    Vehiculo.find({}, function (err, todo) {
       const todoMap = [];
 
       todo.forEach(function (toDo) {
@@ -46,54 +50,54 @@ app.get('/api/datos', function (req, res) {
       res.status(200).send(todoMap);
     });
   } catch (error) {
-    res.statusMessage = 'Internal Error server';
+    res.statusMessage = 'No hay acceso al servidor';
     res.status(500).send(error);
   }
 });
-// POST ingresa tasks por json
+// POST ingresa vehiculos por json
 app.post('/api/datos', jsonParser, async function (req, res) {
-  const { title, description, status } = req.body;
-  const item = new Item({
-    name: title,
-    description: description,
-    status: status,
+  const { placa, residente, entrada } = req.body;
+  const item = new Vehiculo({
+    placa,
+    residente,
+    entrada,
   });
+
   try {
     await item.save();
-    res.statusMessage = 'Se creo tarea correctamente';
+    res.statusMessage = 'Se ingreso al usuario correctamente';
     res.status(200);
   } catch (err) {
-    res.statusMessage = 'Internal Error server';
+    res.statusMessage = 'No se ingreso el vehiculo';
     res.status(500).send(err);
   }
 });
 //DELETE elimina por id
 app.delete('/api/datos/:id', (req, res) => {
-  Item.findByIdAndDelete(req.params.id)
+  Vehiculo.findByIdAndDelete(req.params.id)
     .then((todo) => {
       if (!todo) {
         return res.status(404).send();
       }
-      res.statusMessage = 'Se elimino correctamente';
+      res.statusMessage = 'Se dio salida correctamente';
       res.status(200).send(todo);
     })
     .catch((error) => {
-      res.statusMessage = 'Internal Error server';
+      res.statusMessage = 'No se elimino el vehiculo';
       res.status(500).send(error);
     });
 });
 //PATCH update por id
 app.patch('/api/datos/:id', jsonParser, async function (req, res) {
-  const { title, description, status } = req.body;
+  const { salida, cobro } = req.body;
   try {
-    Item.findByIdAndUpdate(req.params.id)
+    Vehiculo.findByIdAndUpdate(req.params.id)
       .then((todo) => {
         if (!todo) {
           return res.status(404).send();
         }
-        todo.name = title;
-        todo.description = description;
-        todo.status = status;
+        todo.salida = salida;
+        todo.cobro = cobro;
         todo.save();
         res.statusMessage = 'Se actualizo correctamente';
         res.status(200).send(todo);
